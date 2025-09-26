@@ -1,0 +1,9 @@
+<svg width="600" height="600" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="600" height="600" fill="#333333"/>
+<ellipse cx="220" cy="280" rx="60" ry="50" fill="white"/>
+<ellipse cx="380" cy="280" rx="60" ry="50" fill="white"/>
+<path d="M280 260 Q300 240 320 260" stroke="white" stroke-width="8" stroke-linecap="round"/>
+<ellipse cx="220" cy="280" rx="30" ry="25" fill="#333333"/>
+<ellipse cx="380" cy="280" rx="30" ry="25" fill="#333333"/>
+<text x="300" y="450" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="20" font-weight="bold">Headphones</text>
+</svg>
