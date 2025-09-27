@@ -1,7 +1,10 @@
+'use client'
+
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { User, Package, Settings, LogOut } from 'lucide-react'
+import { signOut } from 'next-auth/react'
 
 interface AccountLayoutProps {
   children: React.ReactNode
@@ -53,7 +56,11 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
                 </Link>
               ))}
               <div className="pt-4 border-t">
-                <Button variant="ghost" className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50">
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                >
                   <LogOut className="h-4 w-4 mr-2" />
                   Sign Out
                 </Button>

@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ProductCard } from '@/components/product/product-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Search, Filter, SlidersHorizontal } from 'lucide-react'
+import { Search, SlidersHorizontal } from 'lucide-react'
 
 interface Product {
   id: string
@@ -47,7 +47,7 @@ export default function ProductsPage() {
     totalPages: 0
   })
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams({
@@ -68,11 +68,11 @@ export default function ProductsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentPage, sortBy, sortOrder, searchQuery])
 
   useEffect(() => {
     fetchProducts()
-  }, [currentPage, sortBy, sortOrder])
+  }, [fetchProducts])
 
   const handleSearch = () => {
     setCurrentPage(1)
@@ -85,31 +85,36 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="container py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-4">All Products</h1>
-        <p className="text-muted-foreground">
-          Discover our amazing collection of products
-        </p>
-      </div>
-
-      {/* Filters and Search */}
-      <div className="mb-8 space-y-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* Search */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              className="pl-10"
-            />
-          </div>
-          <Button onClick={handleSearch}>Search</Button>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100">
+      <div className="container mx-auto px-4 py-12 max-w-7xl">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl lg:text-5xl font-bold mb-6 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            All Products
+          </h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Discover our amazing collection of products across all categories
+          </p>
         </div>
+
+        {/* Filters and Search */}
+        <div className="mb-12 space-y-6 bg-white/60 backdrop-blur-sm rounded-2xl p-8 shadow-lg border-0">
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Search */}
+            <div className="flex-1 relative">
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                className="pl-12 h-12 rounded-xl border-gray-200 focus:border-purple-300 focus:ring-purple-200"
+              />
+            </div>
+            <Button onClick={handleSearch} className="h-12 px-8 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
+              Search
+            </Button>
+          </div>
 
         {/* Sort Options */}
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -142,16 +147,16 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* Products Grid */}
-      {loading ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className="bg-muted rounded-lg h-96 animate-pulse" />
-          ))}
-        </div>
-      ) : products.length > 0 ? (
-        <>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+        {/* Products Grid */}
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 justify-items-center">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="bg-white/60 rounded-2xl h-96 animate-pulse shadow-lg" />
+            ))}
+          </div>
+        ) : products.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 justify-items-center mb-8">
             {products.map((product) => (
               <ProductCard
                 key={product.id}
@@ -163,11 +168,12 @@ export default function ProductsPage() {
 
           {/* Pagination */}
           {pagination.totalPages > 1 && (
-            <div className="flex justify-center gap-2">
+            <div className="flex justify-center gap-2 bg-white/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
               <Button
                 variant="outline"
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage(currentPage - 1)}
+                className="rounded-xl hover:bg-purple-50"
               >
                 Previous
               </Button>
@@ -179,6 +185,10 @@ export default function ProductsPage() {
                     key={page}
                     variant={currentPage === page ? "default" : "outline"}
                     onClick={() => setCurrentPage(page)}
+                    className={currentPage === page 
+                      ? "rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600" 
+                      : "rounded-xl hover:bg-purple-50"
+                    }
                   >
                     {page}
                   </Button>
@@ -189,20 +199,22 @@ export default function ProductsPage() {
                 variant="outline"
                 disabled={currentPage === pagination.totalPages}
                 onClick={() => setCurrentPage(currentPage + 1)}
+                className="rounded-xl hover:bg-purple-50"
               >
                 Next
               </Button>
             </div>
           )}
         </>
-      ) : (
-        <div className="text-center py-12">
-          <h3 className="text-lg font-semibold mb-2">No products found</h3>
-          <p className="text-muted-foreground">
-            Try adjusting your search or filters
-          </p>
-        </div>
-      )}
+        ) : (
+          <div className="text-center py-12 bg-white/60 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
+            <h3 className="text-lg font-semibold mb-2">No products found</h3>
+            <p className="text-muted-foreground">
+              Try adjusting your search or filters
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

@@ -28,41 +28,37 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        // For demo purposes, handle the test admin user
-        if (credentials.email === 'admin@store.com' && credentials.password === 'admin123') {
-          // Check if user exists, if not create them
-          let user = await prisma.user.findUnique({
-            where: {
-              email: credentials.email
-            }
-          })
-
-          if (!user) {
-            user = await prisma.user.create({
-              data: {
-                email: credentials.email,
-                name: 'Admin User',
-                role: 'ADMIN',
-                profile: {
-                  create: {
-                    firstName: 'Admin',
-                    lastName: 'User'
-                  }
-                }
-              }
-            })
+        // Find user by email
+        const user = await prisma.user.findUnique({
+          where: {
+            email: credentials.email
+          },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            password: true,
+            role: true,
           }
+        })
 
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
-          }
+        if (!user || !user.password) {
+          return null
         }
 
-        // For production, you'd implement proper password hashing and verification
-        return null
+        // Verify password
+        const isPasswordValid = await bcrypt.compare(credentials.password, user.password)
+        
+        if (!isPasswordValid) {
+          return null
+        }
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        }
       }
     })
   ],
