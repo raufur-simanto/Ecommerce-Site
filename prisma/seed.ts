@@ -10,10 +10,13 @@ async function main() {
   const hashedPassword = await bcrypt.hash('admin123', 12)
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@store.com' },
-    update: {},
+    update: {
+      password: hashedPassword, // Update password if user exists
+    },
     create: {
       email: 'admin@store.com',
       name: 'Admin User',
+      password: hashedPassword, // Include password in create
       role: 'ADMIN',
       profile: {
         create: {
@@ -178,8 +181,10 @@ async function main() {
 
   // Create sample reviews
   const sampleProducts = await prisma.product.findMany({ take: 3 })
-  const sampleUser = await prisma.user.create({
-    data: {
+  const sampleUser = await prisma.user.upsert({
+    where: { email: 'customer@example.com' },
+    update: {},
+    create: {
       email: 'customer@example.com',
       name: 'Sample Customer',
       role: 'CUSTOMER'
@@ -187,8 +192,15 @@ async function main() {
   })
 
   for (const product of sampleProducts) {
-    await prisma.review.create({
-      data: {
+    await prisma.review.upsert({
+      where: {
+        productId_userId: {
+          productId: product.id,
+          userId: sampleUser.id
+        }
+      },
+      update: {},
+      create: {
         productId: product.id,
         userId: sampleUser.id,
         rating: Math.floor(Math.random() * 2) + 4, // 4 or 5 stars

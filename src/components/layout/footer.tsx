@@ -7,7 +7,7 @@ export function Footer() {
   return (
     <footer className="bg-muted/50 border-t">
       <div className="container py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 justify-items-start max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 justify-items-center md:justify-items-start max-w-6xl mx-auto">
           {/* Company Info */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
@@ -105,8 +105,8 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 pt-8 border-t flex flex-col md:flex-row justify-between items-center max-w-6xl mx-auto">
-          <p className="text-sm text-muted-foreground">
+        <div className="mt-8 pt-8 border-t flex flex-col md:flex-row justify-center md:justify-between items-center max-w-6xl mx-auto">
+          <p className="text-sm text-muted-foreground text-center md:text-left">
             © 2024 Store. All rights reserved.
           </p>
           <div className="flex items-center justify-center space-x-4 mt-4 md:mt-0">

@@ -228,7 +228,7 @@ datasource db {
 
 2. Update environment variable:
 ```env
-DATABASE_URL="postgresql://username:password@localhost:5432/ecommerce"
+DATABASE_URL="postgresql://username:password@localhost:5432/ecommerce_db"
 ```
 
 ## 🛠️ Customization
