@@ -45,9 +45,9 @@ export default function CartPage() {
           <div className="space-y-4">
             {cart.items.map((item) => (
               <Card key={item.productId}>
-                <CardContent className="p-6">
-                  <div className="flex gap-4">
-                    <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="relative w-full h-48 sm:w-24 sm:h-24 rounded-lg overflow-hidden flex-shrink-0">
                       <Image
                         src={item.image}
                         alt={item.name}
@@ -56,31 +56,31 @@ export default function CartPage() {
                       />
                     </div>
                     
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 space-y-2">
                       <Link 
                         href={`/products/${item.slug}`}
                         className="font-semibold text-lg text-gray-900 hover:text-blue-600 transition-colors block truncate"
                       >
                         {item.name}
                       </Link>
-                      <p className="text-sm text-gray-500 mt-1">
+                      <p className="text-sm text-gray-500">
                         ${item.price.toFixed(2)} each
                       </p>
                       
                       {item.inventory <= 5 && (
-                        <Badge variant="outline" className="text-orange-600 border-orange-600 mt-2">
+                        <Badge variant="outline" className="text-orange-600 border-orange-600">
                           Only {item.inventory} left in stock
                         </Badge>
                       )}
                     </div>
                     
-                    <div className="flex flex-col items-end gap-4">
-                      <p className="font-bold text-lg">
+                    <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-4">
+                      <p className="font-bold text-lg order-2 sm:order-1">
                         ${(item.price * item.quantity).toFixed(2)}
                       </p>
                       
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center border rounded-lg">
+                      <div className="flex items-center gap-2 order-1 sm:order-2">
+                        <div className="flex items-center border rounded-lg bg-white">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -90,7 +90,7 @@ export default function CartPage() {
                           >
                             <Minus className="h-4 w-4" />
                           </Button>
-                          <span className="px-4 py-2 text-sm font-medium min-w-[3rem] text-center">
+                          <span className="px-3 py-2 text-sm font-medium min-w-[2.5rem] text-center">
                             {item.quantity}
                           </span>
                           <Button
