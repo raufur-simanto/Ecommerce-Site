@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { orderCreateSchema } from '@/lib/validations'
 import { stripe, isDemoMode } from '@/lib/stripe-server'
+import { emailService } from '@/lib/email'
+import { createOrderConfirmationEmail, createAdminNewOrderEmail, OrderEmailData } from '@/lib/email-templates'
 
 export async function POST(request: NextRequest) {
   try {
@@ -115,6 +117,64 @@ export async function POST(request: NextRequest) {
           }
         }
       })
+    }
+
+    // Send order confirmation email
+    try {
+      const orderEmailData: OrderEmailData = {
+        orderNumber: order.orderNumber,
+        customerName: `${validatedData.shippingAddress.firstName} ${validatedData.shippingAddress.lastName}`,
+        customerEmail: validatedData.shippingAddress.email,
+        items: order.items.map(item => ({
+          name: item.productName,
+          sku: item.productSku,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalPrice: item.totalPrice
+        })),
+        subtotal: order.subtotal,
+        taxAmount: order.taxAmount,
+        shippingAmount: order.shippingAmount,
+        discountAmount: order.discountAmount,
+        totalAmount: order.totalAmount,
+        shippingAddress: {
+          firstName: validatedData.shippingAddress.firstName,
+          lastName: validatedData.shippingAddress.lastName,
+          street1: validatedData.shippingAddress.address,
+          city: validatedData.shippingAddress.city,
+          state: validatedData.shippingAddress.state,
+          postalCode: validatedData.shippingAddress.postalCode,
+          country: validatedData.shippingAddress.country
+        }
+      }
+
+      // Send customer confirmation email
+      const customerEmailHtml = createOrderConfirmationEmail(orderEmailData)
+      await emailService.sendEmail({
+        to: validatedData.shippingAddress.email,
+        subject: `Order Confirmation - #${order.orderNumber}`,
+        html: customerEmailHtml
+      })
+
+      // Send admin notification email
+      const adminEmailHtml = createAdminNewOrderEmail(orderEmailData)
+      
+      // Get admin emails from settings or fallback to a default
+      const adminSettings = await prisma.siteSettings.findFirst({
+        where: { key: 'adminNotificationEmail' }
+      })
+      
+      const adminEmail = adminSettings?.value || 'admin@example.com'
+      
+      await emailService.sendEmail({
+        to: adminEmail,
+        subject: `New Order Alert - #${order.orderNumber}`,
+        html: adminEmailHtml
+      })
+
+    } catch (emailError) {
+      // Log email error but don't fail the order
+      console.error('Failed to send order emails:', emailError)
     }
 
     return NextResponse.json({ order }, { status: 201 })

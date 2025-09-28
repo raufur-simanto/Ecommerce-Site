@@ -141,6 +141,40 @@ export default function AdminSettingsPage() {
     }))
   }
 
+  const [testEmail, setTestEmail] = useState('')
+  const [testingEmail, setTestingEmail] = useState(false)
+
+  const handleTestEmail = async () => {
+    if (!testEmail) {
+      alert('Please enter a test email address')
+      return
+    }
+
+    setTestingEmail(true)
+    try {
+      const response = await fetch('/api/admin/email/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ testEmail }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        alert('Test email sent successfully! Check your inbox.')
+      } else {
+        alert(`Failed to send test email: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Error testing email:', error)
+      alert('Failed to send test email')
+    } finally {
+      setTestingEmail(false)
+    }
+  }
+
   const handleSave = async () => {
     setLoading(true)
     try {
@@ -392,6 +426,32 @@ export default function AdminSettingsPage() {
                     onChange={(e) => handleInputChange('smtpPassword', e.target.value)}
                   />
                 </div>
+              </div>
+
+              {/* Test Email Section */}
+              <div className="border-t pt-4">
+                <h4 className="text-sm font-medium text-gray-900 mb-3">Test Email Configuration</h4>
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Enter test email address"
+                      type="email"
+                      value={testEmail}
+                      onChange={(e) => setTestEmail(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleTestEmail}
+                    disabled={testingEmail || !testEmail}
+                  >
+                    {testingEmail ? 'Sending...' : 'Send Test Email'}
+                  </Button>
+                </div>
+                <p className="text-sm text-gray-600 mt-2">
+                  Send a test email to verify your SMTP configuration is working correctly.
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

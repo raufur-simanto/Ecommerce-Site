@@ -18,7 +18,8 @@ import {
   ChevronRight,
   FolderOpen,
   Tag,
-  MessageSquare
+  MessageSquare,
+  Mail
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { signOut } from 'next-auth/react'
@@ -53,6 +54,11 @@ const adminNavItems = [
     name: 'Reviews',
     href: '/admin/reviews',
     icon: MessageSquare,
+  },
+  {
+    name: 'Emails',
+    href: '/admin/emails',
+    icon: Mail,
   },
   {
     name: 'Users',
