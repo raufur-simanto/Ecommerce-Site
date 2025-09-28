@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -34,6 +36,21 @@ import { CartIcon } from '@/components/cart/cart-icon'
 
 export function Header() {
   const { data: session } = useSession()
+  const router = useRouter()
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      router.push(`/products?q=${encodeURIComponent(searchQuery.trim())}`)
+    }
+  }
+
+  const handleSearchInputKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch(e as any)
+    }
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -95,13 +112,24 @@ export function Header() {
 
         {/* Search Bar */}
         <div className="flex-1 max-w-md mx-4">
-          <div className="relative">
+          <form onSubmit={handleSearch} className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search products..."
-              className="pl-10"
+              className="pl-10 pr-4"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleSearchInputKeyDown}
             />
-          </div>
+            <Button
+              type="submit"
+              size="sm"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 px-3"
+              variant="ghost"
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+          </form>
         </div>
 
         {/* Right Actions */}

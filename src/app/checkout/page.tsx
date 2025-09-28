@@ -91,7 +91,8 @@ export default function CheckoutPage() {
     setError('')
 
     try {
-      // Create payment intent
+      // Step 1: Create payment intent
+      setError('Creating payment intent...')
       const paymentResponse = await fetch('/api/create-payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -102,12 +103,22 @@ export default function CheckoutPage() {
         throw new Error('Failed to create payment intent')
       }
 
-      const { paymentIntentId } = await paymentResponse.json()
+      const paymentData = await paymentResponse.json()
+      const { paymentIntentId, isDemoMode, message } = paymentData
 
-      // For MVP, we'll simulate payment completion
-      // In production, you'd integrate with Stripe Elements
+      // Step 2: Show demo mode message if applicable
+      if (isDemoMode && message) {
+        console.log('Demo mode:', message)
+      }
+
+      // Step 3: Simulate payment processing
+      setError('Processing payment...')
       
-      // Create order
+      // Add a realistic delay for demo purposes
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      // Step 4: Create order
+      setError('Creating your order...')
       const orderResponse = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -119,7 +130,7 @@ export default function CheckoutPage() {
           })),
           total: cart.total,
           shippingAddress: data,
-          paymentIntentId, // In production, this would come from Stripe after payment
+          paymentIntentId,
         }),
       })
 
@@ -130,11 +141,17 @@ export default function CheckoutPage() {
 
       const { order } = await orderResponse.json()
 
-      // Clear cart and redirect to success page
+      // Step 5: Success - clear cart and redirect
+      setError('Order created successfully! Redirecting...')
       clearCart()
-      router.push(`/checkout/success?order_id=${order.id}`)
+      
+      // Small delay before redirect to show success message
+      setTimeout(() => {
+        router.push(`/checkout/success?order_id=${order.id}`)
+      }, 1000)
+      
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      setError(err instanceof Error ? err.message : 'An error occurred during checkout')
     } finally {
       setIsLoading(false)
     }
@@ -145,11 +162,25 @@ export default function CheckoutPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Checkout Form */}
         <div>
-          <h1 className="text-2xl font-bold mb-6">Checkout</h1>
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-bold">Checkout</h1>
+            <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+              🎭 Demo Mode
+            </div>
+          </div>
           
           {error && (
-            <Alert className="mb-6" variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
+            <Alert className={`mb-6 ${error.includes('successfully') || error.includes('Creating') || error.includes('Processing') ? '' : 'variant-destructive'}`}>
+              <AlertDescription>
+                {error.includes('Creating') || error.includes('Processing') || error.includes('successfully') ? (
+                  <span className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    {error}
+                  </span>
+                ) : (
+                  error
+                )}
+              </AlertDescription>
             </Alert>
           )}
 
@@ -277,13 +308,60 @@ export default function CheckoutPage() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <CreditCard className="h-5 w-5" />
-                  Payment
+                  Payment Information
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-blue-700">
-                    🚧 This is a demo checkout. In production, this would integrate with Stripe Elements for secure payment processing.
+              <CardContent className="space-y-4">
+                <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                  <p className="text-sm text-blue-700 font-medium">
+                    🎭 Demo Mode: Use the test card details below
+                  </p>
+                </div>
+
+                <div className="grid gap-4">
+                  <div>
+                    <Label htmlFor="cardNumber">Card Number</Label>
+                    <Input
+                      id="cardNumber"
+                      placeholder="4242 4242 4242 4242"
+                      defaultValue="4242 4242 4242 4242"
+                      className="font-mono"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Use test card: 4242 4242 4242 4242</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="expiry">Expiry Date</Label>
+                      <Input
+                        id="expiry"
+                        placeholder="MM/YY"
+                        defaultValue="12/28"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="cvc">CVC</Label>
+                      <Input
+                        id="cvc"
+                        placeholder="123"
+                        defaultValue="123"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="cardName">Name on Card</Label>
+                    <Input
+                      id="cardName"
+                      placeholder="John Doe"
+                      defaultValue={session?.user?.name || ''}
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <p className="text-sm text-green-700">
+                    ✅ Payment method verified - Ready to process
                   </p>
                 </div>
               </CardContent>

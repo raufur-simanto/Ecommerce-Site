@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { ProductCard } from '@/components/product/product-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,6 +36,9 @@ interface ProductsResponse {
 }
 
 export default function ProductsPage() {
+  const searchParams = useSearchParams()
+  const { data: session } = useSession()
+  const router = useRouter()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -46,6 +51,14 @@ export default function ProductsPage() {
     total: 0,
     totalPages: 0
   })
+
+  // Initialize search query from URL parameters
+  useEffect(() => {
+    const urlSearchQuery = searchParams.get('q')
+    if (urlSearchQuery) {
+      setSearchQuery(urlSearchQuery)
+    }
+  }, [searchParams])
 
   const fetchProducts = useCallback(async () => {
     setLoading(true)
@@ -79,9 +92,40 @@ export default function ProductsPage() {
     fetchProducts()
   }
 
-  const handleToggleWishlist = (productId: string) => {
-    // TODO: Implement wishlist functionality
-    console.log('Toggle wishlist:', productId)
+  const handleToggleWishlist = async (productId: string) => {
+    if (!session) {
+      router.push('/auth/signin')
+      return
+    }
+
+    try {
+      // Check current wishlist status
+      const checkResponse = await fetch(`/api/wishlist/${productId}`)
+      const checkData = await checkResponse.json()
+      
+      if (checkData.isInWishlist) {
+        // Remove from wishlist
+        const response = await fetch(`/api/wishlist/${productId}`, {
+          method: 'DELETE'
+        })
+        if (response.ok) {
+          alert('Product removed from wishlist')
+        }
+      } else {
+        // Add to wishlist
+        const response = await fetch('/api/wishlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productId })
+        })
+        if (response.ok) {
+          alert('Product added to wishlist')
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling wishlist:', error)
+      alert('Failed to update wishlist')
+    }
   }
 
   return (
@@ -149,14 +193,14 @@ export default function ProductsPage() {
 
         {/* Products Grid */}
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 justify-items-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="bg-white/60 rounded-2xl h-96 animate-pulse shadow-lg" />
+              <div key={i} className="bg-white/60 rounded-2xl h-[420px] animate-pulse shadow-lg w-full" />
             ))}
           </div>
         ) : products.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 justify-items-center mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
             {products.map((product) => (
               <ProductCard
                 key={product.id}

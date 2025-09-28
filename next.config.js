@@ -38,6 +38,12 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'img.drz.lazcdn.com',
+        port: '',
+        pathname: '/**',
+      }
     ],
   },
   turbopack: {

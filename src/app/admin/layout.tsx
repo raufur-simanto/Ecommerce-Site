@@ -15,7 +15,10 @@ import {
   X,
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  FolderOpen,
+  Tag,
+  MessageSquare
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { signOut } from 'next-auth/react'
@@ -32,9 +35,24 @@ const adminNavItems = [
     icon: Package,
   },
   {
+    name: 'Categories',
+    href: '/admin/categories',
+    icon: FolderOpen,
+  },
+  {
+    name: 'Brands',
+    href: '/admin/brands',
+    icon: Tag,
+  },
+  {
     name: 'Orders',
     href: '/admin/orders',
     icon: ShoppingCart,
+  },
+  {
+    name: 'Reviews',
+    href: '/admin/reviews',
+    icon: MessageSquare,
   },
   {
     name: 'Users',

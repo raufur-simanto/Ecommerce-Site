@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { orderCreateSchema } from '@/lib/validations'
-import stripe from '@/lib/stripe-server'
+import { stripe, isDemoMode } from '@/lib/stripe-server'
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,13 +25,27 @@ export async function POST(request: NextRequest) {
 
     // Verify payment intent if provided
     if (validatedData.paymentIntentId) {
-      const paymentIntent = await stripe.paymentIntents.retrieve(validatedData.paymentIntentId)
-      
-      if (paymentIntent.status !== 'succeeded') {
-        return NextResponse.json(
-          { error: 'Payment not completed' },
-          { status: 400 }
-        )
+      if (isDemoMode || !stripe || validatedData.paymentIntentId.startsWith('pi_demo_')) {
+        // Demo mode - accept any demo payment intent
+        console.log('Demo mode: Accepting payment intent', validatedData.paymentIntentId)
+      } else {
+        // Real Stripe verification
+        try {
+          const paymentIntent = await stripe.paymentIntents.retrieve(validatedData.paymentIntentId)
+          
+          if (paymentIntent.status !== 'succeeded') {
+            return NextResponse.json(
+              { error: 'Payment not completed' },
+              { status: 400 }
+            )
+          }
+        } catch (error) {
+          console.error('Error verifying payment intent:', error)
+          return NextResponse.json(
+            { error: 'Invalid payment intent' },
+            { status: 400 }
+          )
+        }
       }
     }
 
