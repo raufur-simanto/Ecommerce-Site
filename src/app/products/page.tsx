@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Search, SlidersHorizontal } from 'lucide-react'
+import { Search, SlidersHorizontal, ChevronRight, Home } from 'lucide-react'
+import Link from 'next/link'
 
 interface Product {
   id: string
@@ -41,7 +42,7 @@ export default function ProductsPage() {
   const router = useRouter()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   const [sortBy, setSortBy] = useState('createdAt')
   const [sortOrder, setSortOrder] = useState('desc')
   const [currentPage, setCurrentPage] = useState(1)
@@ -52,13 +53,15 @@ export default function ProductsPage() {
     totalPages: 0
   })
 
-  // Initialize search query from URL parameters
+  // Get filters from URL parameters directly - no state needed
+  const searchQuery = searchParams.get('q') || ''
+  const selectedCategory = searchParams.get('category') || ''
+  const selectedBrand = searchParams.get('brand') || ''
+
+  // Sync search input with URL param
   useEffect(() => {
-    const urlSearchQuery = searchParams.get('q')
-    if (urlSearchQuery) {
-      setSearchQuery(urlSearchQuery)
-    }
-  }, [searchParams])
+    setSearchInput(searchQuery)
+  }, [searchQuery])
 
   const fetchProducts = useCallback(async () => {
     setLoading(true)
@@ -68,8 +71,20 @@ export default function ProductsPage() {
         limit: '12',
         sortBy,
         sortOrder,
-        ...(searchQuery && { q: searchQuery })
+        ...(searchQuery && { q: searchQuery }),
+        ...(selectedCategory && { category: selectedCategory }),
+        ...(selectedBrand && { brand: selectedBrand })
       })
+
+      console.log('Frontend - Fetching products with params:', {
+        page: currentPage,
+        sortBy,
+        sortOrder,
+        searchQuery,
+        selectedCategory,
+        selectedBrand
+      })
+      console.log('Frontend - Full URL:', `/api/products?${params}`)
 
       const response = await fetch(`/api/products?${params}`)
       const data: ProductsResponse = await response.json()
@@ -81,15 +96,21 @@ export default function ProductsPage() {
     } finally {
       setLoading(false)
     }
-  }, [currentPage, sortBy, sortOrder, searchQuery])
+  }, [currentPage, sortBy, sortOrder, searchQuery, selectedCategory, selectedBrand])
 
   useEffect(() => {
     fetchProducts()
   }, [fetchProducts])
 
   const handleSearch = () => {
-    setCurrentPage(1)
-    fetchProducts()
+    const params = new URLSearchParams(searchParams.toString())
+    if (searchInput.trim()) {
+      params.set('q', searchInput.trim())
+    } else {
+      params.delete('q')
+    }
+    params.delete('page') // Reset to page 1
+    router.push(`/products?${params.toString()}`)
   }
 
   const handleToggleWishlist = async (productId: string) => {
@@ -131,15 +152,108 @@ export default function ProductsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100">
       <div className="container mx-auto px-4 py-12 max-w-7xl">
+        {/* Breadcrumb */}
+        <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-6">
+          <Link href="/" className="hover:text-purple-600 flex items-center">
+            <Home className="h-4 w-4 mr-1" />
+            Home
+          </Link>
+          <ChevronRight className="h-4 w-4" />
+          <Link href="/products" className="hover:text-purple-600">
+            Products
+          </Link>
+          {selectedCategory && (
+            <>
+              <ChevronRight className="h-4 w-4" />
+              <Link href="/categories" className="hover:text-purple-600">
+                Categories
+              </Link>
+              <ChevronRight className="h-4 w-4" />
+              <span className="text-purple-600 font-medium">
+                {selectedCategory.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              </span>
+            </>
+          )}
+          {selectedBrand && (
+            <>
+              <ChevronRight className="h-4 w-4" />
+              <Link href="/brands" className="hover:text-purple-600">
+                Brands
+              </Link>
+              <ChevronRight className="h-4 w-4" />
+              <span className="text-purple-600 font-medium">
+                {selectedBrand.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              </span>
+            </>
+          )}
+        </nav>
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl lg:text-5xl font-bold mb-6 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-            All Products
+            {selectedCategory ? `Category: ${selectedCategory.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}` :
+             selectedBrand ? `Brand: ${selectedBrand.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}` :
+             searchQuery ? `Search Results for "${searchQuery}"` :
+             'All Products'}
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Discover our amazing collection of products across all categories
+            {selectedCategory ? `Browse products in ${selectedCategory.replace(/-/g, ' ')} category` :
+             selectedBrand ? `Discover products from ${selectedBrand.replace(/-/g, ' ')} brand` :
+             searchQuery ? `Found products matching "${searchQuery}"` :
+             'Discover our amazing collection of products across all categories'}
           </p>
         </div>
+
+        {/* Active Filters */}
+        {(selectedCategory || selectedBrand || searchQuery) && (
+          <div className="mb-6 bg-white/60 backdrop-blur-sm rounded-2xl p-4 shadow-lg border-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-medium text-gray-700">Active filters:</span>
+              {selectedCategory && (
+                <Badge variant="secondary" className="bg-purple-100 text-purple-800 hover:bg-purple-200 cursor-pointer" 
+                       onClick={() => {
+                         const params = new URLSearchParams(searchParams.toString())
+                         params.delete('category')
+                         params.delete('page')
+                         router.push(`/products?${params.toString()}`)
+                       }}>
+                  Category: {selectedCategory.replace(/-/g, ' ')} ✕
+                </Badge>
+              )}
+              {selectedBrand && (
+                <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200 cursor-pointer"
+                       onClick={() => {
+                         const params = new URLSearchParams(searchParams.toString())
+                         params.delete('brand')
+                         params.delete('page')
+                         router.push(`/products?${params.toString()}`)
+                       }}>
+                  Brand: {selectedBrand.replace(/-/g, ' ')} ✕
+                </Badge>
+              )}
+              {searchQuery && (
+                <Badge variant="secondary" className="bg-pink-100 text-pink-800 hover:bg-pink-200 cursor-pointer"
+                       onClick={() => {
+                         const params = new URLSearchParams(searchParams.toString())
+                         params.delete('q')
+                         params.delete('page')
+                         router.push(`/products?${params.toString()}`)
+                       }}>
+                  Search: "{searchQuery}" ✕
+                </Badge>
+              )}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-gray-600 hover:text-gray-800"
+                onClick={() => {
+                  router.push('/products')
+                }}
+              >
+                Clear all filters
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Filters and Search */}
         <div className="mb-12 space-y-6 bg-white/60 backdrop-blur-sm rounded-2xl p-8 shadow-lg border-0">
@@ -149,8 +263,8 @@ export default function ProductsPage() {
               <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                 className="pl-12 h-12 rounded-xl border-gray-200 focus:border-purple-300 focus:ring-purple-200"
               />
@@ -186,7 +300,13 @@ export default function ProductsPage() {
           </div>
           
           <Badge variant="secondary">
-            {pagination.total} products found
+            {pagination.total} product{pagination.total !== 1 ? 's' : ''} found
+            {(selectedCategory || selectedBrand) && (
+              <span className="ml-1">
+                {selectedCategory && `in ${selectedCategory.replace(/-/g, ' ')}`}
+                {selectedBrand && `from ${selectedBrand.replace(/-/g, ' ')}`}
+              </span>
+            )}
           </Badge>
         </div>
       </div>

@@ -39,6 +39,7 @@ interface SiteSettings {
   timezone: string
   
   // Email
+  transportType: string
   smtpHost: string
   smtpPort: string
   smtpUser: string
@@ -78,6 +79,7 @@ interface SiteSettings {
 
 export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [settings, setSettings] = useState<SiteSettings>({
     // General
     siteName: 'E-Commerce Store',
@@ -94,6 +96,7 @@ export default function AdminSettingsPage() {
     timezone: 'America/New_York',
     
     // Email
+    transportType: 'smtp',
     smtpHost: '',
     smtpPort: '587',
     smtpUser: '',
@@ -130,6 +133,66 @@ export default function AdminSettingsPage() {
     maintenanceMode: false,
     maintenanceMessage: 'We are currently performing maintenance. Please check back later.'
   })
+
+  // Load existing settings on component mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await fetch('/api/admin/settings')
+        const data = await response.json()
+        
+        if (response.ok && data.settings) {
+          setSettings(prev => ({
+            ...prev,
+            // Map database values to form state
+            storeName: data.settings.storeName || prev.storeName,
+            storeAddress: data.settings.storeAddress || prev.storeAddress,
+            storePhone: data.settings.storePhone || prev.storePhone,
+            currency: data.settings.currency || prev.currency,
+            timezone: data.settings.timezone || prev.timezone,
+            
+            transportType: data.settings.transportType || prev.transportType,
+            smtpHost: data.settings.smtpHost || prev.smtpHost,
+            smtpPort: data.settings.smtpPort || prev.smtpPort,
+            smtpUser: data.settings.smtpUser || prev.smtpUser,
+            smtpPassword: data.settings.smtpPassword || prev.smtpPassword,
+            emailFromName: data.settings.fromName || prev.emailFromName,
+            emailFromAddress: data.settings.fromEmail || prev.emailFromAddress,
+            
+            stripePublishableKey: data.settings.stripePublishableKey || prev.stripePublishableKey,
+            stripeSecretKey: data.settings.stripeSecretKey || prev.stripeSecretKey,
+            paypalClientId: data.settings.paypalClientId || prev.paypalClientId,
+            paypalClientSecret: data.settings.paypalClientSecret || prev.paypalClientSecret,
+            enablePaypal: data.settings.enablePaypal === 'true' || prev.enablePaypal,
+            enableStripe: data.settings.enableStripe === 'true' || prev.enableStripe,
+            
+            freeShippingThreshold: parseFloat(data.settings.freeShippingThreshold) || prev.freeShippingThreshold,
+            defaultShippingRate: parseFloat(data.settings.defaultShippingRate) || prev.defaultShippingRate,
+            enableLocalDelivery: data.settings.enableLocalDelivery === 'true' || prev.enableLocalDelivery,
+            
+            enableReviews: data.settings.enableReviews === 'true' || prev.enableReviews,
+            enableWishlist: data.settings.enableWishlist === 'true' || prev.enableWishlist,
+            enableCompareProducts: data.settings.enableCompareProducts === 'true' || prev.enableCompareProducts,
+            autoApproveReviews: data.settings.autoApproveReviews === 'true' || prev.autoApproveReviews,
+            
+            metaTitle: data.settings.metaTitle || prev.metaTitle,
+            metaDescription: data.settings.metaDescription || prev.metaDescription,
+            googleAnalyticsId: data.settings.googleAnalyticsId || prev.googleAnalyticsId,
+            facebookPixelId: data.settings.facebookPixelId || prev.facebookPixelId,
+            
+            maintenanceMode: data.settings.maintenanceMode === 'true' || prev.maintenanceMode,
+            maintenanceMessage: data.settings.maintenanceMessage || prev.maintenanceMessage,
+          }))
+        }
+      } catch (error) {
+        console.error('Error loading settings:', error)
+      } finally {
+        setInitialLoading(false)
+      }
+    }
+
+    loadSettings()
+  }, [])
 
   const handleInputChange = <K extends keyof SiteSettings>(
     key: K,
@@ -178,19 +241,35 @@ export default function AdminSettingsPage() {
   const handleSave = async () => {
     setLoading(true)
     try {
-      // In a real app, this would save to your API/database
-      console.log('Saving settings:', settings)
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      alert('Settings saved successfully!')
+      const response = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        alert('Settings saved successfully!')
+      } else {
+        alert(`Failed to save settings: ${data.error}`)
+      }
     } catch (error) {
       console.error('Error saving settings:', error)
       alert('Failed to save settings')
     } finally {
       setLoading(false)
     }
+  }
+
+  if (initialLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
   }
 
   return (
@@ -388,42 +467,80 @@ export default function AdminSettingsPage() {
               <CardTitle>Email Configuration</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Transport Type Selection */}
+              <div>
+                <Label htmlFor="transportType">Email Transport Type</Label>
+                <Select
+                  value={settings.transportType || 'smtp'}
+                  onValueChange={(value) => handleInputChange('transportType', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select transport type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="smtp">SMTP Server</SelectItem>
+                    <SelectItem value="mta">MTA Server (with Auth)</SelectItem>
+                    <SelectItem value="sendmail">Sendmail (Local MTA)</SelectItem>
+                    <SelectItem value="ses">Amazon SES</SelectItem>
+                    <SelectItem value="mailgun">Mailgun</SelectItem>
+                    <SelectItem value="postmark">Postmark</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-gray-600 mt-1">
+                  Choose how emails will be sent from your server
+                </p>
+              </div>
+
+              {/* SMTP/MTA Settings - Show for SMTP and MTA (with auth) */}
+              {(settings.transportType === 'smtp' || settings.transportType === 'mta' || !settings.transportType) && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="smtpHost">SMTP Host</Label>
+                  <Label htmlFor="smtpHost">
+                    {settings.transportType === 'mta' ? 'MTA Server Host' : 'SMTP Host'}
+                  </Label>
                   <Input
                     id="smtpHost"
                     value={settings.smtpHost}
                     onChange={(e) => handleInputChange('smtpHost', e.target.value)}
-                    placeholder="smtp.gmail.com"
+                    placeholder={settings.transportType === 'mta' ? 'mta.yourserver.com' : 'smtp.gmail.com'}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="smtpPort">SMTP Port</Label>
+                  <Label htmlFor="smtpPort">
+                    {settings.transportType === 'mta' ? 'MTA Server Port' : 'SMTP Port'}
+                  </Label>
                   <Input
                     id="smtpPort"
                     value={settings.smtpPort}
                     onChange={(e) => handleInputChange('smtpPort', e.target.value)}
+                    placeholder={settings.transportType === 'mta' ? '587 or 25' : '587'}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="smtpUser">SMTP Username</Label>
+                  <Label htmlFor="smtpUser">
+                    {settings.transportType === 'mta' ? 'MTA Username' : 'SMTP Username'}
+                  </Label>
                   <Input
                     id="smtpUser"
                     value={settings.smtpUser}
                     onChange={(e) => handleInputChange('smtpUser', e.target.value)}
+                    placeholder="your-email@domain.com"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="smtpPassword">SMTP Password</Label>
+                  <Label htmlFor="smtpPassword">
+                    {settings.transportType === 'mta' ? 'MTA Password' : 'SMTP Password'}
+                  </Label>
                   <Input
                     id="smtpPassword"
                     type="password"
                     value={settings.smtpPassword}
                     onChange={(e) => handleInputChange('smtpPassword', e.target.value)}
+                    placeholder="Your password"
                   />
                 </div>
               </div>
@@ -450,10 +567,14 @@ export default function AdminSettingsPage() {
                   </Button>
                 </div>
                 <p className="text-sm text-gray-600 mt-2">
-                  Send a test email to verify your SMTP configuration is working correctly.
+                  Send a test email to verify your {settings.transportType === 'mta' ? 'MTA server' : 'SMTP'} configuration is working correctly.
                 </p>
               </div>
 
+                </>
+              )}
+
+              {/* Common Email Settings */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="emailFromName">From Name</Label>

@@ -2,12 +2,25 @@ import nodemailer from 'nodemailer'
 import { prisma } from './prisma'
 
 export interface EmailConfig {
-  smtpHost: string
-  smtpPort: number
-  smtpUser: string
-  smtpPassword: string
+  transportType: 'smtp' | 'mta' | 'sendmail' | 'ses' | 'mailgun' | 'postmark'
+  smtpHost?: string
+  smtpPort?: number
+  smtpUser?: string
+  smtpPassword?: string
   fromEmail: string
   fromName: string
+  // MTA/Sendmail specific
+  sendmailPath?: string
+  sendmailArgs?: string[]
+  // AWS SES specific
+  sesAccessKeyId?: string
+  sesSecretAccessKey?: string
+  sesRegion?: string
+  // Mailgun specific
+  mailgunApiKey?: string
+  mailgunDomain?: string
+  // Postmark specific
+  postmarkServerToken?: string
 }
 
 export interface EmailData {
@@ -26,28 +39,75 @@ class EmailService {
       const settings = await prisma.siteSettings.findMany({
         where: {
           key: {
-            in: ['smtpHost', 'smtpPort', 'smtpUser', 'smtpPassword', 'fromEmail', 'fromName']
+            in: [
+              'transportType', 'smtpHost', 'smtpPort', 'smtpUser', 'smtpPassword', 
+              'fromEmail', 'fromName', 'sendmailPath', 'sendmailArgs',
+              'sesAccessKeyId', 'sesSecretAccessKey', 'sesRegion',
+              'mailgunApiKey', 'mailgunDomain', 'postmarkServerToken'
+            ]
           }
         }
       })
+
+      console.log('Retrieved settings from database:', settings.length)
 
       const settingsMap = settings.reduce((acc, setting) => {
         acc[setting.key] = setting.value
         return acc
       }, {} as Record<string, string>)
 
-      if (!settingsMap.smtpHost || !settingsMap.smtpUser || !settingsMap.smtpPassword) {
-        console.warn('SMTP configuration incomplete')
-        return null
+      console.log('Settings map:', Object.keys(settingsMap))
+
+      const transportType = (settingsMap.transportType || 'smtp') as EmailConfig['transportType']
+
+      // Validate configuration based on transport type
+      switch (transportType) {
+        case 'smtp':
+        case 'mta':
+          if (!settingsMap.smtpHost || !settingsMap.smtpUser || !settingsMap.smtpPassword) {
+            console.warn('SMTP/MTA configuration incomplete')
+            return null
+          }
+          break
+        case 'sendmail':
+          // Sendmail doesn't require authentication, just path
+          break
+        case 'ses':
+          if (!settingsMap.sesAccessKeyId || !settingsMap.sesSecretAccessKey) {
+            console.warn('AWS SES configuration incomplete')
+            return null
+          }
+          break
+        case 'mailgun':
+          if (!settingsMap.mailgunApiKey || !settingsMap.mailgunDomain) {
+            console.warn('Mailgun configuration incomplete')
+            return null
+          }
+          break
+        case 'postmark':
+          if (!settingsMap.postmarkServerToken) {
+            console.warn('Postmark configuration incomplete')
+            return null
+          }
+          break
       }
 
       return {
+        transportType,
         smtpHost: settingsMap.smtpHost,
         smtpPort: parseInt(settingsMap.smtpPort) || 587,
         smtpUser: settingsMap.smtpUser,
         smtpPassword: settingsMap.smtpPassword,
-        fromEmail: settingsMap.fromEmail || settingsMap.smtpUser,
-        fromName: settingsMap.fromName || 'E-Commerce Store'
+        fromEmail: settingsMap.fromEmail || settingsMap.smtpUser || 'noreply@example.com',
+        fromName: settingsMap.fromName || 'E-Commerce Store',
+        sendmailPath: settingsMap.sendmailPath,
+        sendmailArgs: settingsMap.sendmailArgs ? JSON.parse(settingsMap.sendmailArgs) : undefined,
+        sesAccessKeyId: settingsMap.sesAccessKeyId,
+        sesSecretAccessKey: settingsMap.sesSecretAccessKey,
+        sesRegion: settingsMap.sesRegion || 'us-east-1',
+        mailgunApiKey: settingsMap.mailgunApiKey,
+        mailgunDomain: settingsMap.mailgunDomain,
+        postmarkServerToken: settingsMap.postmarkServerToken
       }
     } catch (error) {
       console.error('Failed to get email configuration:', error)
@@ -63,22 +123,111 @@ class EmailService {
         return false
       }
 
-      this.transporter = nodemailer.createTransporter({
-        host: this.config.smtpHost,
-        port: this.config.smtpPort,
-        secure: this.config.smtpPort === 465, // true for 465, false for other ports
-        auth: {
-          user: this.config.smtpUser,
-          pass: this.config.smtpPassword,
-        },
-        tls: {
-          rejectUnauthorized: false // Allow self-signed certificates for development
-        }
-      })
+      let transportConfig: any
 
-      // Verify connection
-      await this.transporter.verify()
-      console.log('Email service initialized successfully')
+      switch (this.config.transportType) {
+        case 'smtp':
+          transportConfig = {
+            host: this.config.smtpHost,
+            port: this.config.smtpPort,
+            secure: this.config.smtpPort === 465,
+            auth: {
+              user: this.config.smtpUser,
+              pass: this.config.smtpPassword,
+            },
+            tls: {
+              rejectUnauthorized: false
+            }
+          }
+          break
+
+        case 'mta':
+          transportConfig = {
+            host: this.config.smtpHost,
+            port: this.config.smtpPort || 587,
+            secure: this.config.smtpPort === 465,
+            auth: {
+              user: this.config.smtpUser,
+              pass: this.config.smtpPassword,
+            },
+            tls: {
+              rejectUnauthorized: false
+            },
+            // MTA specific settings
+            connectionTimeout: 60000, // 60 seconds
+            greetingTimeout: 30000,   // 30 seconds
+            socketTimeout: 60000,     // 60 seconds
+          }
+          break
+
+        case 'sendmail':
+          transportConfig = {
+            sendmail: true,
+            newline: 'unix',
+            path: this.config.sendmailPath || '/usr/sbin/sendmail',
+            args: this.config.sendmailArgs || ['-t']
+          }
+          break
+
+        case 'ses':
+          // You'll need to install @aws-sdk/client-ses
+          transportConfig = {
+            SES: {
+              ses: {
+                accessKeyId: this.config.sesAccessKeyId,
+                secretAccessKey: this.config.sesSecretAccessKey,
+                region: this.config.sesRegion
+              },
+              aws: {
+                SendRawEmail: {},
+                SendBulkTemplatedEmail: {}
+              }
+            }
+          }
+          break
+
+        case 'mailgun':
+          // You'll need to install nodemailer-mailgun-transport
+          transportConfig = {
+            service: 'Mailgun',
+            auth: {
+              api_key: this.config.mailgunApiKey,
+              domain: this.config.mailgunDomain
+            }
+          }
+          break
+
+        case 'postmark':
+          // You'll need to install nodemailer-postmark-transport
+          transportConfig = {
+            service: 'Postmark',
+            auth: {
+              server: this.config.postmarkServerToken
+            }
+          }
+          break
+
+        default:
+          throw new Error(`Unsupported transport type: ${this.config.transportType}`)
+      }
+
+      this.transporter = nodemailer.createTransport(transportConfig)
+
+      // Verify connection (skip for sendmail as it doesn't support verify)
+      // For MTA, try verify but don't fail if it doesn't work
+      if (this.config.transportType !== 'sendmail') {
+        try {
+          await this.transporter.verify()
+        } catch (verifyError) {
+          if (this.config.transportType === 'mta') {
+            console.warn('MTA verification failed, but continuing (some MTA servers don\'t support VERIFY):', verifyError)
+          } else {
+            throw verifyError
+          }
+        }
+      }
+      
+      console.log(`Email service initialized successfully with ${this.config.transportType}`)
       return true
     } catch (error) {
       console.error('Failed to initialize email service:', error)

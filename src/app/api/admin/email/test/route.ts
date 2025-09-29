@@ -25,11 +25,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Test connection first
+    console.log('Testing email connection...')
     const isConfigured = await emailService.testConnection()
     
     if (!isConfigured) {
+      console.log('Email service not configured')
       return NextResponse.json(
-        { error: 'Email service is not properly configured. Please check SMTP settings in admin.' },
+        { error: 'Email service is not properly configured. Please check SMTP settings in admin settings first.' },
         { status: 400 }
       )
     }
