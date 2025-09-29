@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -18,13 +18,24 @@ export async function PATCH(
     // For demo purposes, we'll allow any authenticated user
 
     const { status } = await request.json()
-    const orderId = params.id
+    const { id: orderId } = await params
+
+    // Validate status against valid OrderStatus enum values
+    const validStatuses = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED']
+    const upperCaseStatus = status.toUpperCase()
+    
+    if (!validStatuses.includes(upperCaseStatus)) {
+      return NextResponse.json(
+        { error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },
+        { status: 400 }
+      )
+    }
 
     // Update order status
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
       data: { 
-        status: status.toUpperCase(),
+        status: upperCaseStatus,
         updatedAt: new Date()
       },
       include: {
@@ -62,7 +73,7 @@ export async function PATCH(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -71,7 +82,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const orderId = params.id
+    const { id: orderId } = await params
 
     const order = await prisma.order.findUnique({
       where: { id: orderId },

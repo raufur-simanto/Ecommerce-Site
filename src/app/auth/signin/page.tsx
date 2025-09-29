@@ -172,7 +172,7 @@ export default function SignInPage() {
         </div>
 
         {/* Demo Credentials */}
-        <Card className="bg-muted/50">
+        {/* <Card className="bg-muted/50">
           <CardContent className="pt-6">
             <div className="text-center space-y-2">
               <p className="text-sm font-medium">Demo Credentials</p>
@@ -182,7 +182,7 @@ export default function SignInPage() {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
     </div>
   )

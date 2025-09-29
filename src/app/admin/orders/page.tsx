@@ -132,14 +132,20 @@ export default function AdminOrders() {
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'completed':
+      case 'delivered':
         return 'bg-green-100 text-green-800'
       case 'pending':
         return 'bg-yellow-100 text-yellow-800'
+      case 'confirmed':
+        return 'bg-blue-100 text-blue-800'
+      case 'processing':
+        return 'bg-indigo-100 text-indigo-800'
+      case 'shipped':
+        return 'bg-purple-100 text-purple-800'
       case 'cancelled':
         return 'bg-red-100 text-red-800'
-      case 'processing':
-        return 'bg-blue-100 text-blue-800'
+      case 'refunded':
+        return 'bg-orange-100 text-orange-800'
       default:
         return 'bg-gray-100 text-gray-800'
     }
@@ -161,9 +167,12 @@ export default function AdminOrders() {
   const statusCounts = {
     total: orders.length,
     pending: orders.filter(o => o.status.toLowerCase() === 'pending').length,
+    confirmed: orders.filter(o => o.status.toLowerCase() === 'confirmed').length,
     processing: orders.filter(o => o.status.toLowerCase() === 'processing').length,
-    completed: orders.filter(o => o.status.toLowerCase() === 'completed').length,
+    shipped: orders.filter(o => o.status.toLowerCase() === 'shipped').length,
+    delivered: orders.filter(o => o.status.toLowerCase() === 'delivered').length,
     cancelled: orders.filter(o => o.status.toLowerCase() === 'cancelled').length,
+    refunded: orders.filter(o => o.status.toLowerCase() === 'refunded').length,
   }
 
   return (
@@ -222,8 +231,8 @@ export default function AdminOrders() {
                 <CheckCircle className="h-6 w-6" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Completed</p>
-                <p className="text-2xl font-bold text-gray-900">{statusCounts.completed}</p>
+                <p className="text-sm font-medium text-gray-600">Delivered</p>
+                <p className="text-2xl font-bold text-gray-900">{statusCounts.delivered}</p>
               </div>
             </div>
           </CardContent>
@@ -264,9 +273,12 @@ export default function AdminOrders() {
               <SelectContent>
                 <SelectItem value="all">All Orders</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="confirmed">Confirmed</SelectItem>
                 <SelectItem value="processing">Processing</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="shipped">Shipped</SelectItem>
+                <SelectItem value="delivered">Delivered</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="refunded">Refunded</SelectItem>
               </SelectContent>
             </Select>
             <Button onClick={handleSearch}>
@@ -342,9 +354,12 @@ export default function AdminOrders() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="PENDING">Pending</SelectItem>
+                            <SelectItem value="CONFIRMED">Confirmed</SelectItem>
                             <SelectItem value="PROCESSING">Processing</SelectItem>
-                            <SelectItem value="COMPLETED">Completed</SelectItem>
+                            <SelectItem value="SHIPPED">Shipped</SelectItem>
+                            <SelectItem value="DELIVERED">Delivered</SelectItem>
                             <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                            <SelectItem value="REFUNDED">Refunded</SelectItem>
                           </SelectContent>
                         </Select>
                       </TableCell>

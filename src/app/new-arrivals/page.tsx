@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { ProductCard } from '@/components/product/product-card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
@@ -22,6 +24,8 @@ interface Product {
 }
 
 export default function NewArrivalsPage() {
+  const { data: session } = useSession()
+  const router = useRouter()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -46,9 +50,40 @@ export default function NewArrivalsPage() {
     fetchNewArrivals()
   }, [])
 
-  const handleToggleWishlist = (productId: string) => {
-    // TODO: Implement wishlist functionality
-    console.log('Toggle wishlist:', productId)
+  const handleToggleWishlist = async (productId: string) => {
+    if (!session) {
+      router.push('/auth/signin')
+      return
+    }
+
+    try {
+      // Check current wishlist status
+      const checkResponse = await fetch(`/api/wishlist/${productId}`)
+      const checkData = await checkResponse.json()
+      
+      if (checkData.isInWishlist) {
+        // Remove from wishlist
+        const response = await fetch(`/api/wishlist/${productId}`, {
+          method: 'DELETE'
+        })
+        if (response.ok) {
+          alert('Product removed from wishlist')
+        }
+      } else {
+        // Add to wishlist
+        const response = await fetch('/api/wishlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productId })
+        })
+        if (response.ok) {
+          alert('Product added to wishlist')
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling wishlist:', error)
+      alert('Failed to update wishlist')
+    }
   }
 
   const isNewArrival = (createdAt: string) => {
@@ -65,9 +100,9 @@ export default function NewArrivalsPage() {
           <Skeleton className="h-8 w-48 mb-4" />
           <Skeleton className="h-4 w-96" />
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {Array.from({ length: 12 }).map((_, i) => (
-            <Skeleton key={i} className="h-96 rounded-lg" />
+            <Skeleton key={i} className="h-[420px] rounded-lg w-full" />
           ))}
         </div>
       </div>
@@ -126,9 +161,9 @@ export default function NewArrivalsPage() {
 
         {/* Products Grid */}
         {products.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 justify-items-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {products.map((product) => (
-            <div key={product.id} className="relative">
+            <div key={product.id} className="relative w-full">
               <ProductCard
                 product={product}
                 onToggleWishlist={handleToggleWishlist}

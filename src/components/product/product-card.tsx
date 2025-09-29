@@ -41,14 +41,15 @@ export function ProductCard({
     : 0
 
   return (
-    <Card className="group relative overflow-hidden">
-      <div className="relative aspect-square overflow-hidden">
+    <Card className="group relative overflow-hidden h-full flex flex-col">
+      <div className="relative aspect-square overflow-hidden bg-gray-100">
         <Link href={`/products/${product.slug}`}>
           <Image
             src={product.images[0]?.url || '/placeholder-product.svg'}
             alt={product.images[0]?.altText || product.name}
             fill
             className="object-cover transition-transform group-hover:scale-105"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
           />
         </Link>
         
@@ -80,46 +81,57 @@ export function ProductCard({
         </Button>
       </div>
 
-      <CardContent className="p-4">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
+      <CardContent className="p-4 flex-1 flex flex-col">
+        <div className="space-y-3 flex-1">
+          {/* Category and Brand - Fixed height */}
+          <div className="flex items-center justify-between min-h-[20px]">
+            <p className="text-sm text-muted-foreground truncate">
               {product.category.name}
             </p>
-            {product.brand && (
-              <p className="text-sm font-medium">{product.brand.name}</p>
-            )}
+            <p className="text-sm font-medium text-right truncate max-w-[100px]">
+              {product.brand?.name || ''}
+            </p>
           </div>
           
+          {/* Product Name - Fixed height with consistent line clamping */}
           <Link href={`/products/${product.slug}`}>
-            <h3 className="font-semibold hover:underline line-clamp-2">
+            <h3 className="font-semibold hover:underline line-clamp-2 min-h-[48px] leading-6">
               {product.name}
             </h3>
           </Link>
 
-          {/* Rating */}
-          {product.averageRating && (
-            <div className="flex items-center gap-1">
+          {/* Rating - Fixed height even when empty */}
+          <div className="flex items-center gap-1 min-h-[20px]">
+            {product.averageRating ? (
+              <>
+                <div className="flex">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`h-4 w-4 ${
+                        i < Math.floor(product.averageRating!)
+                          ? 'fill-yellow-400 text-yellow-400'
+                          : 'text-gray-300'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  ({product.reviewCount || 0})
+                </span>
+              </>
+            ) : (
               <div className="flex">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`h-4 w-4 ${
-                      i < Math.floor(product.averageRating!)
-                        ? 'fill-yellow-400 text-yellow-400'
-                        : 'text-gray-300'
-                    }`}
-                  />
+                  <Star key={i} className="h-4 w-4 text-gray-200" />
                 ))}
+                <span className="text-sm text-muted-foreground ml-1">(0)</span>
               </div>
-              <span className="text-sm text-muted-foreground">
-                ({product.reviewCount || 0})
-              </span>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Price */}
-          <div className="flex items-center gap-2">
+          {/* Price - Fixed at bottom */}
+          <div className="flex items-center gap-2 mt-auto">
             <span className="text-lg font-bold">
               {formatPrice(product.price)}
             </span>

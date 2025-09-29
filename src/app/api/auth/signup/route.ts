@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
+import { emailService } from '@/lib/email'
+import { createWelcomeEmail } from '@/lib/email-templates'
 
 const signupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -54,6 +56,19 @@ export async function POST(request: NextRequest) {
         createdAt: true,
       }
     })
+
+    // Send welcome email
+    try {
+      const welcomeEmailHtml = createWelcomeEmail(name, email)
+      await emailService.sendEmail({
+        to: email,
+        subject: 'Welcome to E-Commerce Store!',
+        html: welcomeEmailHtml
+      })
+    } catch (emailError) {
+      // Log email error but don't fail signup
+      console.error('Failed to send welcome email:', emailError)
+    }
 
     return NextResponse.json(
       { 

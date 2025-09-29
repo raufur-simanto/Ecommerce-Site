@@ -361,7 +361,7 @@ export default function AdminAnalyticsPage() {
                     {order.status}
                   </Badge>
                   <div className="text-right">
-                    <p className="font-medium">{formatCurrency(order.total)}</p>
+                    <p className="font-medium">{formatCurrency((order as any).total || (order as any).totalAmount || 0)}</p>
                     <p className="text-sm text-gray-500">
                       {new Date(order.createdAt).toLocaleDateString()}
                     </p>

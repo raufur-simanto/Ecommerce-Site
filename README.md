@@ -18,12 +18,12 @@ A fully functional, scalable, and secure e-commerce platform built with Next.js 
 - **Role-Based Access**: Admin and customer role management
 - **Secure Sessions**: JWT-based session management with proper security
 
-### 🛒 **Shopping Experience**
-- **Shopping Cart**: Add/remove items with persistent storage
-- **Guest Checkout**: Shop without creating an account
-- **Multiple Payment Methods**: Stripe integration for secure payments
-- **Order Management**: Real-time order tracking and status updates
-- **Email Notifications**: Order confirmations and status updates
+### 🛒 **Shopping Experience** ✅ **FULLY IMPLEMENTED**
+- **Shopping Cart**: Add/remove items with persistent storage and real-time updates
+- **Wishlist System**: Save favorite products for later with toggle functionality
+- **Product Reviews & Ratings**: Complete review system with star ratings and customer feedback
+- **Advanced Filtering**: Filter products by category, brand, price range with URL-based filtering
+- **Email Notifications**: Complete email system for order confirmations and status updates
 
 ### 🔧 **Admin Dashboard** ✅ **FULLY IMPLEMENTED**
 - **Product Management**: Complete CRUD operations for products with categories and brands
@@ -53,7 +53,7 @@ A fully functional, scalable, and secure e-commerce platform built with Next.js 
 ### **Backend**
 - **Next.js API Routes** - Serverless API endpoints
 - **Prisma ORM** - Type-safe database operations
-- **SQLite** - Lightweight database for development
+- **PostgreSQL** - Production-ready relational database
 - **Zod** - Schema validation library
 
 ### **Authentication & Payments**
@@ -88,12 +88,20 @@ cp .env.example .env
 
 Update the `.env` file with your configuration:
 ```env
-# Database
-DATABASE_URL="file:./prisma/dev.db"
+# Database (PostgreSQL)
+DATABASE_URL="postgresql://username:password@localhost:5432/ecommerce_db"
 
 # NextAuth.js (Required)
 NEXTAUTH_URL="http://localhost:3000" 
 NEXTAUTH_SECRET="your-super-secret-key-change-this-in-production"
+
+# Email Configuration (Required for notifications)
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_USER="your-email@gmail.com"
+SMTP_PASSWORD="your-app-password"
+FROM_EMAIL="your-email@gmail.com"
+FROM_NAME="Your Store Name"
 
 # OAuth Providers (Optional - for social login)
 GOOGLE_CLIENT_ID="your-google-client-id"
@@ -107,7 +115,7 @@ STRIPE_SECRET_KEY="your-stripe-secret-key"
 STRIPE_WEBHOOK_SECRET="your-stripe-webhook-secret"
 ```
 
-**Note**: The application will work with just the database URL and NextAuth configuration. OAuth and Stripe are optional for development.
+**Note**: The application requires PostgreSQL database and email configuration for full functionality. OAuth and Stripe are optional for development.
 
 ### 3. Database Setup
 ```bash
@@ -153,11 +161,13 @@ The application uses a comprehensive database schema with the following main ent
 ### Sample Data
 The seed script creates:
 - **Admin user**: `admin@store.com` / `admin123` (for testing admin features)
+- **Test user**: `user@test.com` / `user123` (for testing customer features)
 - **Categories**: Electronics, Fashion, Sports, Home & Garden, Books, Beauty
 - **Brands**: Apple, Samsung, Nike, Adidas, Sony
 - **Products**: iPhone 15 Pro, Galaxy S24, Nike Air Max, and more with images
-- **Reviews**: Sample customer reviews with ratings
-- **Site settings**: Basic store configuration
+- **Reviews**: Sample customer reviews with star ratings
+- **Wishlist items**: Sample wishlist data
+- **Site settings**: Complete store configuration
 
 ## 🎯 Available Scripts
 
@@ -196,6 +206,18 @@ npx prisma studio    # Direct command to open database browser
 - `/api/auth/[...nextauth]` - NextAuth.js authentication endpoints
 - `GET /api/auth/session` - Get current user session
 
+### **Reviews & Wishlist**
+- `GET /api/products/[id]/reviews` - Get product reviews with pagination
+- `POST /api/products/[id]/reviews` - Create product review (authenticated)
+- `GET /api/wishlist` - Get user's wishlist items
+- `POST /api/wishlist` - Add product to wishlist
+- `DELETE /api/wishlist/[productId]` - Remove from wishlist
+- `GET /api/wishlist/[productId]` - Check if product is in wishlist
+
+### **Email Notifications**
+- `POST /api/email/send` - Send transactional emails
+- Email templates for order confirmations, welcome messages, etc.
+
 ### **Admin**
 - `GET /api/admin/dashboard` - Dashboard statistics and metrics
 - `GET /api/admin/users` - User management with filtering and pagination
@@ -216,20 +238,18 @@ The application can be deployed to any platform that supports Node.js:
 - AWS Amplify
 
 ### Production Database
-For production, switch from SQLite to PostgreSQL:
+The application uses PostgreSQL as the primary database. For production deployment:
 
-1. Update `prisma/schema.prisma`:
-```prisma
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-```
+1. Set up your PostgreSQL database (cloud providers like Neon, Supabase, or PlanetScale work well)
+2. Update the `DATABASE_URL` environment variable with your production database URL
+3. Run migrations: `npx prisma db push`
+4. Seed with data: `npm run db:seed`
 
-2. Update environment variable:
-```env
-DATABASE_URL="postgresql://username:password@localhost:5432/ecommerce_db"
-```
+### Email Configuration
+Configure SMTP settings for transactional emails:
+- **Gmail**: Use App Passwords for authentication
+- **SendGrid**: Professional email service for production
+- **Resend**: Modern email API service
 
 ## 🛠️ Customization
 
@@ -256,25 +276,33 @@ The codebase is designed for extensibility:
 
 ### Phase 1 ✅ **COMPLETED**
 - ✅ Project setup and architecture with Next.js 15
-- ✅ Complete database schema with Prisma ORM
+- ✅ Complete database schema with Prisma ORM and PostgreSQL
 - ✅ Full authentication system (email/password + social login)
 - ✅ Product catalog with categories, brands, and images
 - ✅ Responsive UI components with Tailwind CSS
-- ✅ **Complete admin dashboard with full CRUD operations**
+- ✅ Complete admin dashboard with full CRUD operations
 - ✅ User management system with role-based access
 - ✅ Analytics dashboard with business metrics
 - ✅ Settings management system
 - ✅ Form validation and error handling
 - ✅ Footer layout and responsive design
 
-### Phase 2 (Next Steps)
-- 🔄 Shopping cart implementation
-- 🔄 Checkout and payment flow with Stripe
-- 🔄 Order management system
-- 🔄 Email notifications and confirmations
-- 🔄 Customer reviews and ratings system
+### Phase 2 ✅ **COMPLETED**
+- ✅ **Wishlist system** - Save and manage favorite products
+- ✅ **Product reviews and ratings** - Complete review system with star ratings
+- ✅ **Email notification system** - Transactional emails with SMTP integration
+- ✅ **Advanced product filtering** - Filter by category, brand, price with URL-based navigation
+- ✅ **Enhanced user experience** - Breadcrumbs, filter badges, responsive design
+- ✅ **Database optimization** - Efficient queries with proper indexing
 
-### Phase 3 (Future)
+### Phase 3 ✅ **COMPLETED**
+- 🔄 Shopping cart implementation with persistent storage
+- 🔄 Checkout and payment flow with Stripe integration
+- 🔄 Order management system with status tracking
+- 🔄 Inventory management and stock alerts
+- 🔄 Customer dashboard with order history
+
+### Phase 4 (Future)
 - 📅 Multi-vendor marketplace capabilities
 - 📅 Mobile app integration (React Native)
 - 📅 Advanced analytics and reporting
@@ -300,8 +328,5 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 - [Prisma](https://prisma.io/) - Database toolkit
 - [NextAuth.js](https://next-auth.js.org/) - Authentication
 - [Shadcn/ui](https://ui.shadcn.com/) - UI components
-- [Vercel](https://vercel.com/) - Deployment platform
 
----
 
-**Made with ❤️ for modern e-commerce**

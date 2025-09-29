@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -17,9 +17,11 @@ export async function GET(
       )
     }
 
+    const { id } = await params
+    
     const order = await prisma.order.findFirst({
       where: {
-        id: params.id,
+        id,
         user: {
           email: session.user.email
         }

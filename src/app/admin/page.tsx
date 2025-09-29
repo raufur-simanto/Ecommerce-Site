@@ -20,7 +20,7 @@ interface DashboardStats {
   totalRevenue: number
   recentOrders: Array<{
     id: string
-    total: number
+    totalAmount: number
     status: string
     createdAt: string
     user: {
@@ -107,12 +107,20 @@ export default function AdminDashboard() {
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'completed':
+      case 'delivered':
         return 'bg-green-100 text-green-800'
       case 'pending':
         return 'bg-yellow-100 text-yellow-800'
+      case 'confirmed':
+        return 'bg-blue-100 text-blue-800'
+      case 'processing':
+        return 'bg-indigo-100 text-indigo-800'
+      case 'shipped':
+        return 'bg-purple-100 text-purple-800'
       case 'cancelled':
         return 'bg-red-100 text-red-800'
+      case 'refunded':
+        return 'bg-orange-100 text-orange-800'
       default:
         return 'bg-gray-100 text-gray-800'
     }
@@ -167,7 +175,7 @@ export default function AdminDashboard() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold">${order.total.toFixed(2)}</p>
+                      <p className="font-bold">${(order.totalAmount || 0).toFixed(2)}</p>
                       <Badge className={getStatusColor(order.status)}>
                         {order.status}
                       </Badge>

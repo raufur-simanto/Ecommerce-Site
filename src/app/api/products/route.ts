@@ -7,6 +7,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const rawParams = Object.fromEntries(searchParams.entries())
     
+    console.log('Products API - Raw params received:', rawParams)
+    
     // Convert numeric params
     const params: any = { ...rawParams }
     if (params.minPrice) params.minPrice = parseFloat(params.minPrice)
@@ -15,6 +17,7 @@ export async function GET(request: NextRequest) {
     if (params.limit) params.limit = parseInt(params.limit)
 
     const validatedParams = productSearchSchema.parse(params)
+    console.log('Products API - Validated params:', validatedParams)
     
     const {
       q,
@@ -46,11 +49,15 @@ export async function GET(request: NextRequest) {
 
     if (category) {
       where.category = { slug: category }
+      console.log('Products API - Filtering by category:', category)
     }
 
     if (brand) {
       where.brand = { slug: brand }
+      console.log('Products API - Filtering by brand:', brand)
     }
+
+    console.log('Products API - Final where clause:', JSON.stringify(where, null, 2))
 
     if (minPrice !== undefined || maxPrice !== undefined) {
       where.price = {}
